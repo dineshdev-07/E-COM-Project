@@ -30,11 +30,15 @@ app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://ecommerce-frontend-fawn-three.vercel.app",
+    ],
     credentials: true,
-  }),
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
 );
-
 app.use(cookieParser());
 app.use(express.json());
 
