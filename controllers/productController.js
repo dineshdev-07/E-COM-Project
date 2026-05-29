@@ -45,7 +45,7 @@ const calculateSmartOffer = (product, user) => {
 };
 
 export const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ isActive: true });
+  const products = await Product.find({});
 
   let user = null;
   if (req.user) {
@@ -269,4 +269,3 @@ export const getSuggestions = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "Server error fetching suggestions" });
   }
 });
-
