@@ -1,4 +1,5 @@
 import cors from "cors";
+import express from "express";
 
 app.use((req, res, next) => {
   console.log(req.method, req.url);
@@ -14,4 +15,3 @@ app.use(
   })
 );
 
-app.options("*", cors());
