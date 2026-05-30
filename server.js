@@ -28,30 +28,12 @@ const __dirname = path.dirname(__filename);
 
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
-app.use((req, res, next) => {
-  res.header(
-    "Access-Control-Allow-Origin",
-    "https://ecommerce-frontend-fawn-three.vercel.app",
-  );
-
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-  );
-
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS",
-  );
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
+app.use(
+  cors({
+    origin: "https://ecommerce-frontend-fawn-three.vercel.app",
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.json());
 
