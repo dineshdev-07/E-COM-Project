@@ -5,17 +5,33 @@ import asyncHandler from "express-async-handler";
 
 let otpStore = {};
 
-const generateTokenAndSetCookie = (res, userId) => {
+const getAuthCookieOptions = (req, overrides = {}) => {
+  const origin = req.get("origin") || "";
+  const isHttpsRequest =
+    req.secure ||
+    req.get("x-forwarded-proto") === "https" ||
+    origin.startsWith("https://");
+
+  return {
+    httpOnly: true,
+    secure: isHttpsRequest,
+    sameSite: isHttpsRequest ? "none" : "lax",
+    ...overrides,
+  };
+};
+
+const generateTokenAndSetCookie = (req, res, userId) => {
   const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie(
+    "token",
+    token,
+    getAuthCookieOptions(req, {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    }),
+  );
 
   return token;
 };
@@ -172,7 +188,7 @@ export const registerUser = async (req, res) => {
     });
 
     delete otpStore[email];
-    generateTokenAndSetCookie(res, user._id);
+    generateTokenAndSetCookie(req, res, user._id);
 
     res.status(201).json({
       _id: user._id,
@@ -195,7 +211,7 @@ export const loginUser = async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
-    generateTokenAndSetCookie(res, user._id);
+    generateTokenAndSetCookie(req, res, user._id);
     res.json({
       _id: user._id,
       name: user.name,
@@ -213,12 +229,13 @@ export const loginUser = async (req, res) => {
 };
 
 export const logoutUser = (req, res) => {
-  res.cookie("token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    expires: new Date(0),
-  });
+  res.cookie(
+    "token",
+    "",
+    getAuthCookieOptions(req, {
+      expires: new Date(0),
+    }),
+  );
   res.status(200).json({ message: "Logged out successfully" });
 };
 
