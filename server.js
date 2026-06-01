@@ -22,6 +22,8 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -54,14 +56,32 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
-connectDB();
+const startServer = async () => {
+  try {
+    await connectDB();
 
-app.get("/", (req, res) => res.send("API is running"));
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("DB Connection Failed:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "API running",
+  });
+});
 
 app.get("/test-db", async (req, res) => {
   res.json({ mongoStatus: mongoose.connection.readyState });
@@ -81,8 +101,15 @@ app.use("/api/seller-requests", sellerRequestRoutes);
 app.use("/api/delivery-partners", deliveryPartnerRoutes);
 
 app.use((err, req, res, next) => {
-  console.error("GLOBAL ERROR:", err);
-  res.status(500).json({ message: err.message });
+  console.error(err.stack);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : err.message,
+  });
 });
 
 const PORT = process.env.PORT || 5000;
