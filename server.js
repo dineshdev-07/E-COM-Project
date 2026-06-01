@@ -29,13 +29,19 @@ app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 const allowedOrigins = new Set([
   "https://ecommerce-frontend-fawn-three.vercel.app",
+  "https://ecommerce-frontend-fawn-theta.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ]);
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) {
+    const isVercelFrontend =
+      /^https:\/\/ecommerce-frontend-fawn-[a-z0-9-]+\.vercel\.app$/.test(
+        origin || "",
+      );
+
+    if (!origin || allowedOrigins.has(origin) || isVercelFrontend) {
       return callback(null, true);
     }
 
