@@ -25,6 +25,12 @@ import deliveryPartnerRoutes from "./routes/deliveryPartnerRoutes.js";
 
 const app = express();
 
+app.use((req, res, next) => {
+  console.log("METHOD:", req.method);
+  console.log("ORIGIN:", req.headers.origin);
+  console.log("URL:", req.originalUrl);
+  next();
+});
 app.set("trust proxy", 1);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,30 +42,42 @@ const allowedOrigins = [
   "https://ecommerce-frontend-fawn-three.vercel.app",
   "https://ecommerce-frontend-fawn-theta.vercel.app",
   "http://localhost:5173",
-  "http://127.0.0.1:5173",
 ];
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    const isAllowedVercelFrontend =
-      /^https:\/\/ecommerce-frontend-[a-z0-9-]+(?:-[a-z0-9-]+)*\.vercel\.app$/.test(
-        origin || "",
-      );
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
 
-    if (!origin || allowedOrigins.includes(origin) || isAllowedVercelFrontend) {
-      return callback(null, true);
-    }
+      if (
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/ecommerce-frontend-.*\.vercel\.app$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
 
-    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 204,
-};
+      return callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// Handle preflight requests explicitly
+app.options(/.*/, (req, res) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.sendStatus(204);
+});
+
+
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
