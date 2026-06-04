@@ -41,21 +41,39 @@ const __dirname = path.dirname(__filename);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- CORS CONFIGURATION START ---
-const allowedOrigins = ["https://ecommerce-frontend-fawn-three.vercel.app"];
+// Parse FRONTEND_URL from .env (comma-separated list) and trim whitespace
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
+  : [];
+
+// Automatically include localhost for local development testing
+if (!allowedOrigins.includes("http://localhost:5173")) {
+  allowedOrigins.push("http://localhost:5173");
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, or Postman)
     if (!origin) return callback(null, true);
 
-    if (
-      allowedOrigins.includes(origin) ||
-      /^https:\/\/ecommerce-frontend-.*\.vercel\.app$/.test(origin)
-    ) {
+    // Normalize incoming origin by removing http:// or https://
+    const cleanOrigin = origin.replace(/^https?:\/\//, "");
+
+    // Check if the clean origin matches any clean allowed origin
+    const isAllowed = allowedOrigins.some((allowed) => {
+      const cleanAllowed = allowed.replace(/^https?:\/\//, "");
+      return cleanAllowed === cleanOrigin;
+    });
+
+    // Match wildcard Vercel preview branch deployments
+    const isVercelPreview =
+      /^https:\/\/ecommerce-frontend-.*\.vercel\.app$/.test(origin);
+
+    if (isAllowed || isVercelPreview) {
       return callback(null, true);
     }
 
-    // Pass false instead of an Error object to cleanly reject unauthorized origins
+    // Safely reject unauthorized origins without throwing a server crash error
     return callback(null, false);
   },
   credentials: true,
@@ -67,12 +85,12 @@ const corsOptions = {
     "Accept",
     "Authorization",
   ],
-  optionsSuccessStatus: 204, // Responds to preflight with a 204 No Content status
+  optionsSuccessStatus: 204, // Responds to OPTIONS preflight with a 204 status
 };
 
 // Apply CORS options globally
 app.use(cors(corsOptions));
-// Handle preflight requests cleanly for all routes using the native middleware
+// Handle preflight requests natively for all application endpoints
 app.options("*", cors(corsOptions));
 // --- CORS CONFIGURATION END ---
 
