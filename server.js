@@ -41,11 +41,7 @@ const __dirname = path.dirname(__filename);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- CORS CONFIGURATION START ---
-const allowedOrigins = [
-  "https://ecommerce-frontend-fawn-three.vercel.app",
-  "https://ecommerce-frontend-fawn-theta.vercel.app",
-  "http://localhost:5173",
-];
+const allowedOrigins = ["https://ecommerce-frontend-fawn-three.vercel.app"];
 
 const corsOptions = {
   origin: function (origin, callback) {
