@@ -42,21 +42,23 @@ export const sendOTP = async (req, res) => {
   otpStore[email] = otp;
 
   const transporter = nodemailer.createTransport({
-    service: "gmail",
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT) || 465,
+    secure: true, // true because we are using port 465
+    dnsResolution: "ipv4first", // 👈 THIS FORCES NODE TO USE IPv4 AND FIXES ENETUNREACH ON RENDER
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
   });
 
   try {
-    
-await transporter.sendMail({
-  from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
-  to: email,
-  subject: "🔐 Verify Your FreshCart Account",
+    await transporter.sendMail({
+      from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "🔐 Verify Your FreshCart Account",
 
-  html: `
+      html: `
   <div style="
     background:#F0FDF4;
     padding:40px 20px;
@@ -157,8 +159,7 @@ await transporter.sendMail({
     </div>
 
   </div>
-  `
-,
+  `,
     });
     res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
