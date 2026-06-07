@@ -42,16 +42,20 @@ export const sendOTP = async (req, res) => {
   otpStore[email] = otp;
 
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT) || 465,
-    secure: true, // true because we are using port 465
-    dnsResolution: "ipv4first", // 👈 THIS FORCES NODE TO USE IPv4 AND FIXES ENETUNREACH ON RENDER
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  requireTLS: true,
+   connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+await transporter.verify();
+console.log("SMTP Connected");
   try {
     await transporter.sendMail({
       from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
@@ -162,10 +166,15 @@ export const sendOTP = async (req, res) => {
   `,
     });
     res.status(200).json({ message: "OTP sent successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to send OTP" });
-  }
+  } 
+ catch (error) {
+  console.error("Nodemailer Error:", error);
+
+  res.status(500).json({
+    message: "Failed to send OTP",
+    error: error.message,
+  });
+}
 };
 
 export const registerUser = async (req, res) => {
