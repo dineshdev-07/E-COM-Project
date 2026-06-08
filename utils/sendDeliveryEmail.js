@@ -1,7 +1,9 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const createTransporter = () =>
-  nodemailer.createTransport({
+  resend.createTransport({
     service: process.env.EMAIL_SERVICE || "gmail",
     auth: {
       user: process.env.EMAIL_USER,
@@ -10,8 +12,8 @@ const createTransporter = () =>
   });
 
 const canSendEmail = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn("⚠️  EMAIL_USER / EMAIL_PASS not set — skipping email");
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("⚠️ RESEND_API_KEY not set");
     return false;
   }
   return true;
@@ -393,7 +395,13 @@ export const sendOrderSuccessEmail = async ({ to, name, order }) => {
       </td>
     </tr>`;
 
-  await createTransporter().sendMail({
+  await resend.emails.send({
+  from: "onboarding@resend.dev",
+  to,
+  subject,
+  html,
+});
+sendMail({
     from: `"NeoMart 🛒" <${process.env.EMAIL_USER}>`,
     to,
     subject: `🛒 Order Confirmed! #${orderId} — NeoMart`,
@@ -440,7 +448,13 @@ export const sendOutForDeliveryEmail = async ({
     </tr>
   `;
 
-  await createTransporter().sendMail({
+  await resend.emails.send({
+  from: "onboarding@resend.dev",
+  to,
+  subject,
+  html,
+});
+sendMail({
     from: `"NeoMart 🛒" <${process.env.EMAIL_USER}>`,
     to,
     subject: `🛵 Out for Delivery — Order #${orderId}`,
@@ -728,7 +742,13 @@ export const sendDeliveryEmail = async ({ to, name, order }) => {
     </tr>
   `;
 
-  await createTransporter().sendMail({
+  await resend.emails.send({
+  from: "onboarding@resend.dev",
+  to,
+  subject,
+  html,
+});
+sendMail({
     from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
     to,
     subject: `✅ FreshCart Order Delivered — #${orderId}`,
@@ -847,7 +867,13 @@ export const sendOtpEmail = async ({ to, name, otp, order, partnerName }) => {
       </td>
     </tr>`
 
-  await createTransporter().sendMail({
+  await resend.emails.send({
+  from: "onboarding@resend.dev",
+  to,
+  subject,
+  html,
+});
+sendMail({
     from: `"NeoMart 🛒" <${process.env.EMAIL_USER}>`,
     to,
     subject: `🔐 Your NeoMart delivery OTP: ${otp} (Order #${orderId})`,
