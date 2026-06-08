@@ -1,11 +1,18 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import asyncHandler from "express-async-handler";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 let otpStore = {};
+
+// Initialize Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 const getAuthCookieOptions = (req, overrides = {}) => {
   const origin = req.get("origin") || "";
@@ -41,54 +48,36 @@ const generateTokenAndSetCookie = (req, res, userId) => {
 export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
-
     if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
+      return res.status(400).json({ success: false, message: "Email is required" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     otpStore[email] = otp;
 
     console.log("Sending OTP to:", email);
 
-    const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
+    // Nodemailer Mail Setup
+    await transporter.sendMail({
+      from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "🔐 FreshCart OTP Verification",
       html: `
-        <div style="font-family: Arial, sans-serif;">
-          <h2>FreshCart OTP Verification</h2>
-          <p>Your OTP is:</p>
-          <h1 style="letter-spacing:4px;">${otp}</h1>
-          <p>This OTP is valid for 10 minutes.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 400px; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px;">
+          <h2 style="color: #16a34a; margin-top: 0;">FreshCart OTP Verification</h2>
+          <p style="color: #4b5563;">Your verification code is:</p>
+          <h1 style="letter-spacing: 6px; color: #111827; background: #f3f4f6; padding: 12px; text-align: center; border-radius: 8px; font-family: monospace;">${otp}</h1>
+          <p style="color: #9ca3af; font-size: 12px;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
         </div>
       `,
     });
 
-    if (error) {
-      console.error("Resend Error:", error);
+    console.log("OTP email sent successfully");
+    return res.status(200).json({ success: true, message: "OTP sent successfully" });
 
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send OTP",
-        error,
-      });
-    }
-
-    console.log("Email sent:", data);
-
-    return res.status(200).json({
-      success: true,
-      message: "OTP sent successfully",
-    });
   } catch (error) {
     console.error("========== OTP ERROR ==========");
     console.error(error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
@@ -239,9 +228,7 @@ export const addAddress = asyncHandler(async (req, res) => {
 
   if (user.addresses.length >= 2) {
     res.status(400);
-    throw new Error(
-      "Maximum 2 addresses allowed. Please edit an existing one.",
-    );
+    throw new Error("Maximum 2 addresses allowed. Please edit an existing one.");
   }
 
   const { fullAddress, pinCode, phone, district } = req.body;
@@ -271,10 +258,7 @@ export const updateAddress = asyncHandler(async (req, res) => {
   console.log("📍 updateAddress id:", req.params.id, "body:", req.body);
   const address = user.addresses.id(req.params.id);
   if (!address) {
-    console.log(
-      "❌ not found. IDs:",
-      user.addresses.map((a) => String(a._id)),
-    );
+    console.log("❌ not found. IDs:", user.addresses.map((a) => String(a._id)));
     res.status(404);
     throw new Error("Address not found");
   }
