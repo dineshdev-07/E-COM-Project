@@ -37,144 +37,72 @@ const generateTokenAndSetCookie = (req, res, userId) => {
 };
 
 export const sendOTP = async (req, res) => {
-  const { email } = req.body;
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore[email] = otp;
-
-  const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  requireTLS: true,
-   connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-await transporter.verify();
-console.log("SMTP Connected");
   try {
-    await transporter.sendMail({
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = otp;
+
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded" : "Missing");
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      requireTLS: true,
+
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
+
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.verify();
+    console.log("SMTP Connected");
+
+    const info = await transporter.sendMail({
       from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "🔐 Verify Your FreshCart Account",
-
       html: `
-  <div style="
-    background:#F0FDF4;
-    padding:40px 20px;
-    font-family:Arial,sans-serif;
-  ">
-
-    <div style="
-      max-width:520px;
-      background:white;
-      margin:auto;
-      border-radius:24px;
-      overflow:hidden;
-      box-shadow:0 10px 30px rgba(0,0,0,0.08);
-    ">
-
-      <div style="
-        background:linear-gradient(135deg,#22C55E,#16A34A);
-        padding:40px 30px;
-        text-align:center;
-      ">
-
-        <h1 style="
-          color:white;
-          margin:0;
-          font-size:34px;
-          font-weight:900;
-        ">
-          FreshCart 🥬
-        </h1>
-
-        <p style="
-          color:rgba(255,255,255,0.9);
-          margin-top:10px;
-        ">
-          Verify your account
-        </p>
-
-      </div>
-
-      <div style="padding:35px;">
-
-        <h2 style="
-          margin-top:0;
-          color:#222;
-        ">
-          Hello 👋
-        </h2>
-
-        <p style="
-          color:#666;
-          line-height:1.7;
-          font-size:14px;
-        ">
-          Use this OTP to verify your FreshCart account.
-        </p>
-
-        <div style="
-          background:#F0FDF4;
-          border:2px dashed #22C55E;
-          border-radius:20px;
-          padding:30px;
-          text-align:center;
-          margin:30px 0;
-        ">
-
-          <p style="
-            margin:0 0 10px;
-            color:#666;
-            font-size:12px;
-            letter-spacing:2px;
-            font-weight:700;
-          ">
-            YOUR OTP
-          </p>
-
-          <h1 style="
-            letter-spacing:10px;
-            color:#111827;
-            font-family:monospace;
-            font-size:34px;
-          font-weight:900;
-          ">
-            ${otp}
-          </h1>
-
-        </div>
-
-        <p style="
-          color:#999;
-          font-size:12px;
-          text-align:center;
-        ">
-          OTP valid for 10 minutes
-        </p>
-
-      </div>
-
-    </div>
-
-  </div>
-  `,
+        <h2>FreshCart OTP Verification</h2>
+        <p>Your OTP is:</p>
+        <h1>${otp}</h1>
+        <p>OTP valid for 10 minutes.</p>
+      `,
     });
-    res.status(200).json({ message: "OTP sent successfully" });
-  } 
- catch (error) {
-  console.error("Nodemailer Error:", error);
 
-  res.status(500).json({
-    message: "Failed to send OTP",
-    error: error.message,
-  });
-}
+    console.log("Mail sent:", info.messageId);
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+    });
+  } catch (error) {
+    console.error("========== OTP ERROR ==========");
+    console.error(error);
+    console.error("Message:", error.message);
+    console.error("Code:", error.code);
+    console.error("===============================");
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+      error: error.message,
+      code: error.code,
+    });
+  }
 };
 
 export const registerUser = async (req, res) => {
