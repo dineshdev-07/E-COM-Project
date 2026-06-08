@@ -6,10 +6,10 @@ import asyncHandler from "express-async-handler";
 let otpStore = {};
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp-relay.brevo.com",
   port: 587,
-  secure: false, 
-  requireTLS: true, 
+  secure: false,
+  requireTLS: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -51,7 +51,9 @@ export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -75,8 +77,9 @@ export const sendOTP = async (req, res) => {
     });
 
     console.log("OTP email sent successfully");
-    return res.status(200).json({ success: true, message: "OTP sent successfully" });
-
+    return res
+      .status(200)
+      .json({ success: true, message: "OTP sent successfully" });
   } catch (error) {
     console.error("========== OTP ERROR ==========");
     console.error(error);
@@ -230,7 +233,9 @@ export const addAddress = asyncHandler(async (req, res) => {
 
   if (user.addresses.length >= 2) {
     res.status(400);
-    throw new Error("Maximum 2 addresses allowed. Please edit an existing one.");
+    throw new Error(
+      "Maximum 2 addresses allowed. Please edit an existing one.",
+    );
   }
 
   const { fullAddress, pinCode, phone, district } = req.body;
@@ -260,7 +265,10 @@ export const updateAddress = asyncHandler(async (req, res) => {
   console.log("📍 updateAddress id:", req.params.id, "body:", req.body);
   const address = user.addresses.id(req.params.id);
   if (!address) {
-    console.log("❌ not found. IDs:", user.addresses.map((a) => String(a._id)));
+    console.log(
+      "❌ not found. IDs:",
+      user.addresses.map((a) => String(a._id)),
+    );
     res.status(404);
     throw new Error("Address not found");
   }
