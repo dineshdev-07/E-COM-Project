@@ -1,7 +1,9 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import asyncHandler from "express-async-handler";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 let otpStore = {};
 
@@ -42,48 +44,42 @@ export const sendOTP = async (req, res) => {
 
     if (!email) {
       return res.status(400).json({
+        success: false,
         message: "Email is required",
       });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
     otpStore[email] = otp;
 
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded" : "Missing");
+    console.log("Sending OTP to:", email);
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      requireTLS: true,
-
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.verify();
-    console.log("SMTP Connected");
-
-    const info = await transporter.sendMail({
-      from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: "onboarding@resend.dev",
       to: email,
-      subject: "🔐 Verify Your FreshCart Account",
+      subject: "🔐 FreshCart OTP Verification",
       html: `
-        <h2>FreshCart OTP Verification</h2>
-        <p>Your OTP is:</p>
-        <h1>${otp}</h1>
-        <p>OTP valid for 10 minutes.</p>
+        <div style="font-family: Arial, sans-serif;">
+          <h2>FreshCart OTP Verification</h2>
+          <p>Your OTP is:</p>
+          <h1 style="letter-spacing:4px;">${otp}</h1>
+          <p>This OTP is valid for 10 minutes.</p>
+        </div>
       `,
     });
 
-    console.log("Mail sent:", info.messageId);
+    if (error) {
+      console.error("Resend Error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP",
+        error,
+      });
+    }
+
+    console.log("Email sent:", data);
 
     return res.status(200).json({
       success: true,
@@ -92,15 +88,11 @@ export const sendOTP = async (req, res) => {
   } catch (error) {
     console.error("========== OTP ERROR ==========");
     console.error(error);
-    console.error("Message:", error.message);
-    console.error("Code:", error.code);
-    console.error("===============================");
 
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
       error: error.message,
-      code: error.code,
     });
   }
 };
