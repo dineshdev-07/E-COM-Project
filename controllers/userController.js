@@ -57,27 +57,35 @@ export const sendOTP = async (req, res) => {
 
     console.log("Sending OTP to:", email);
 
-    // FIXED SYNTAX FOR NEW BREVO SDK
-    const apiInstance = new Brevo.TransactionalEmailsApi();
-    
-    // Set API Key using the corrected property path
-    apiInstance.authentications['apiKey'].apiKey = process.env.EMAIL_PASS;
+    // 1. Initialize Brevo Client using the correct modern architecture
+    const brevo = new BrevoClient({ 
+      apiKey: process.env.EMAIL_PASS // Your xkeysib- key from Render
+    });
 
-    const sendSmtpEmail = new Brevo.SendSmtpEmail();
-    sendSmtpEmail.subject = "🔐 FreshCart OTP Verification";
-    sendSmtpEmail.htmlContent = `<h3>Your OTP is ${otp}</h3>`;
-    sendSmtpEmail.sender = { name: "FreshCart", email: process.env.EMAIL_USER.trim() };
-    sendSmtpEmail.to = [{ email: email }];
+    // 2. Dispatch via the correct namespaced method structure
+    const result = await brevo.transactionalEmails.sendTransacEmail({
+      subject: "🔐 FreshCart OTP Verification",
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 400px; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px;">
+          <h2 style="color: #16a34a; margin-top: 0;">FreshCart OTP Verification</h2>
+          <p style="color: #4b5563;">Your verification code is:</p>
+          <h1 style="letter-spacing: 6px; color: #111827; background: #f3f4f6; padding: 12px; text-align: center; border-radius: 8px; font-family: monospace;">${otp}</h1>
+          <p style="color: #9ca3af; font-size: 12px;">This OTP is valid for 10 minutes.</p>
+        </div>
+      `,
+      sender: { 
+        name: "FreshCart", 
+        email: process.env.EMAIL_USER.trim() // dineshdevtech@gmail.com
+      },
+      to: [{ email: email }]
+    });
 
-    // Send the email
-    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-
-    console.log("OTP email sent successfully via Official Brevo SDK!");
+    console.log("OTP email sent successfully! Message ID:", result.messageId);
     return res.status(200).json({ success: true, message: "OTP sent successfully" });
 
   } catch (error) {
     console.error("========== OTP ERROR ==========");
-    console.error("SDK Error Details:", error.response?.body || error.message);
+    console.error("SDK Error Details:", error.message);
     
     return res.status(500).json({
       success: false,
