@@ -60,7 +60,7 @@ export const sendOTP = async (req, res) => {
 
     // Nodemailer Mail Setup
     await transporter.sendMail({
-      from: `"FreshCart 🥬" <${process.env.EMAIL_USER}>`,
+      from: `FreshCart <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "🔐 FreshCart OTP Verification",
       html: `
@@ -77,9 +77,13 @@ export const sendOTP = async (req, res) => {
     return res
       .status(200)
       .json({ success: true, message: "OTP sent successfully" });
-  } catch (error) {
+  }
+    catch (error) {
     console.error("========== OTP ERROR ==========");
-    console.error(error);
+    console.error("Error Name:", error.name);
+    console.error("Error Message:", error.message);
+    console.error("Full Error Object:", JSON.stringify(error, null, 2)); // Add this line temporary
+
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
