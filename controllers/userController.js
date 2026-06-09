@@ -1,20 +1,17 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import brevoTransport from "nodemailer-brevo-transport";
 import asyncHandler from "express-async-handler";
 
 let otpStore = {};
 
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  requireTLS: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// 2. Updated Transporter to use HTTP API (Bypasses Render's port blocks)
+const transporter = nodemailer.createTransport(
+  new brevoTransport({
+    apiKey: process.env.EMAIL_PASS,
+  }),
+);
 
 const getAuthCookieOptions = (req, overrides = {}) => {
   const origin = req.get("origin") || "";
