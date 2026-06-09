@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import brevoTransport from "nodemailer-brevo-transport";
 import asyncHandler from "express-async-handler";
+import * as Brevo from "@getbrevo/brevo";
 
 let otpStore = {};
 
@@ -48,7 +49,9 @@ export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -56,44 +59,37 @@ export const sendOTP = async (req, res) => {
 
     console.log("Sending OTP to:", email);
 
-    // Direct HTTP POST request to Brevo API v3
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "api-key": process.env.EMAIL_PASS, // Your xkeysib- API key
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        sender: { 
-          name: "FreshCart", 
-          email: process.env.EMAIL_USER // Your verified Brevo account email
-        },
-        to: [{ email: email }],
-        subject: "🔐 FreshCart OTP Verification",
-        htmlContent: `
-          <div style="font-family: Arial, sans-serif; max-width: 400px; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px;">
-            <h2 style="color: #16a34a; margin-top: 0;">FreshCart OTP Verification</h2>
-            <p style="color: #4b5563;">Your verification code is:</p>
-            <h1 style="letter-spacing: 6px; color: #111827; background: #f3f4f6; padding: 12px; text-align: center; border-radius: 8px; font-family: monospace;">${otp}</h1>
-            <p style="color: #9ca3af; font-size: 12px;">This OTP is valid for 10 minutes.</p>
-          </div>
-        `
-      })
-    });
+    // Initialize the Brevo API Client
+    const apiInstance = new Brevo.TransactionalEmailsApi();
+    apiInstance.setApiKey(
+      Brevo.TransactionalEmailsApiApiKeys.apiKey,
+      process.env.EMAIL_PASS,
+    );
 
-    const data = await response.json();
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = "🔐 FreshCart OTP Verification";
+    sendSmtpEmail.htmlContent = `<h3>Your OTP is ${otp}</h3>`;
+    sendSmtpEmail.sender = {
+      name: "FreshCart",
+      email: process.env.EMAIL_USER.trim(),
+    };
+    sendSmtpEmail.to = [{ email: email }];
 
-    if (!response.ok) {
-      throw new Error(`Brevo API Error: ${data.message || response.statusText}`);
-    }
+    // Send the email using the official SDK
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log("OTP email sent successfully via Direct Brevo API:", data.messageId);
-    return res.status(200).json({ success: true, message: "OTP sent successfully" });
-
+    console.log(
+      "OTP email sent successfully via Official Brevo SDK:",
+      data.body.messageId,
+    );
+    return res
+      .status(200)
+      .json({ success: true, message: "OTP sent successfully" });
   } catch (error) {
     console.error("========== OTP ERROR ==========");
-    console.error("Error Message:", error.message);
+    // This logs the full error array returned by the SDK if Brevo rejects it
+    console.error("SDK Error Details:", error.response?.body || error.message);
+
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
