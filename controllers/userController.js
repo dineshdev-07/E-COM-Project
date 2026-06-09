@@ -49,9 +49,7 @@ export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email is required" });
+      return res.status(400).json({ success: false, message: "Email is required" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -59,37 +57,28 @@ export const sendOTP = async (req, res) => {
 
     console.log("Sending OTP to:", email);
 
-    // Initialize the Brevo API Client
+    // FIXED SYNTAX FOR NEW BREVO SDK
     const apiInstance = new Brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(
-      Brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.EMAIL_PASS,
-    );
+    
+    // Set API Key using the corrected property path
+    apiInstance.authentications['apiKey'].apiKey = process.env.EMAIL_PASS;
 
     const sendSmtpEmail = new Brevo.SendSmtpEmail();
     sendSmtpEmail.subject = "🔐 FreshCart OTP Verification";
     sendSmtpEmail.htmlContent = `<h3>Your OTP is ${otp}</h3>`;
-    sendSmtpEmail.sender = {
-      name: "FreshCart",
-      email: process.env.EMAIL_USER.trim(),
-    };
+    sendSmtpEmail.sender = { name: "FreshCart", email: process.env.EMAIL_USER.trim() };
     sendSmtpEmail.to = [{ email: email }];
 
-    // Send the email using the official SDK
+    // Send the email
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log(
-      "OTP email sent successfully via Official Brevo SDK:",
-      data.body.messageId,
-    );
-    return res
-      .status(200)
-      .json({ success: true, message: "OTP sent successfully" });
+    console.log("OTP email sent successfully via Official Brevo SDK!");
+    return res.status(200).json({ success: true, message: "OTP sent successfully" });
+
   } catch (error) {
     console.error("========== OTP ERROR ==========");
-    // This logs the full error array returned by the SDK if Brevo rejects it
     console.error("SDK Error Details:", error.response?.body || error.message);
-
+    
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
