@@ -112,13 +112,24 @@ export const sendOTP = async (req, res) => {
 
 export const registerUser = async (req, res) => {
   try {
+    console.log("REGISTER REQUEST:", req.body);
+
     const { name, email, password, otp } = req.body;
-    if (otpStore[email] !== otp)
+
+    console.log("Stored OTP:", otpStore[email]);
+    console.log("Entered OTP:", otp);
+
+    if (otpStore[email] !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
+    }
 
     const userExists = await User.findOne({ email });
-    if (userExists)
+
+    console.log("User exists:", userExists);
+
+    if (userExists) {
       return res.status(400).json({ message: "User already exists" });
+    }
 
     const user = await User.create({
       name,
@@ -130,6 +141,8 @@ export const registerUser = async (req, res) => {
       firstOrderCompleted: false,
     });
 
+    console.log("Created User:", user);
+
     delete otpStore[email];
     generateTokenAndSetCookie(req, res, user._id);
 
@@ -137,18 +150,12 @@ export const registerUser = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      isAdmin: user.isAdmin || false,
-      isPlusMember: false,
-      plusExpiryDate: null,
-      loyaltyPoints: 0,
-      streaks: 0,
-      firstOrderCompleted: false,
     });
   } catch (error) {
+    console.error("REGISTER ERROR:", error);
     res.status(500).json({ message: "Registration failed" });
   }
 };
-
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
