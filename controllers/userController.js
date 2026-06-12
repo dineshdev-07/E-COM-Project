@@ -3,11 +3,10 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import brevoTransport from "nodemailer-brevo-transport";
 import asyncHandler from "express-async-handler";
-import * as Brevo from "@getbrevo/brevo";
+
 
 let otpStore = {};
 
-// 2. Updated Transporter to use HTTP API (Bypasses Render's port blocks)
 const transporter = nodemailer.createTransport(
   new brevoTransport({
     apiKey: process.env.EMAIL_PASS,
@@ -48,8 +47,11 @@ const generateTokenAndSetCookie = (req, res, userId) => {
 export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
+
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -57,36 +59,49 @@ export const sendOTP = async (req, res) => {
 
     console.log("Sending OTP to:", email);
 
-    // 1. Initialize Brevo Client using the correct modern architecture
-    const brevo = new BrevoClient({ 
-      apiKey: process.env.EMAIL_PASS // Your xkeysib- key from Render
-    });
-
-    // 2. Dispatch via the correct namespaced method structure
-    const result = await brevo.transactionalEmails.sendTransacEmail({
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
       subject: "🔐 FreshCart OTP Verification",
-      htmlContent: `
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 400px; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px;">
-          <h2 style="color: #16a34a; margin-top: 0;">FreshCart OTP Verification</h2>
-          <p style="color: #4b5563;">Your verification code is:</p>
-          <h1 style="letter-spacing: 6px; color: #111827; background: #f3f4f6; padding: 12px; text-align: center; border-radius: 8px; font-family: monospace;">${otp}</h1>
-          <p style="color: #9ca3af; font-size: 12px;">This OTP is valid for 10 minutes.</p>
+          <h2 style="color: #16a34a; margin-top: 0;">
+            FreshCart OTP Verification
+          </h2>
+
+          <p style="color: #4b5563;">
+            Your verification code is:
+          </p>
+
+          <h1 style="
+            letter-spacing: 6px;
+            color: #111827;
+            background: #f3f4f6;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            font-family: monospace;
+          ">
+            ${otp}
+          </h1>
+
+          <p style="color: #9ca3af; font-size: 12px;">
+            This OTP is valid for 10 minutes.
+          </p>
         </div>
       `,
-      sender: { 
-        name: "FreshCart", 
-        email: process.env.EMAIL_USER.trim() // dineshdevtech@gmail.com
-      },
-      to: [{ email: email }]
     });
 
-    console.log("OTP email sent successfully! Message ID:", result.messageId);
-    return res.status(200).json({ success: true, message: "OTP sent successfully" });
+    console.log("OTP email sent successfully");
 
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+    });
   } catch (error) {
     console.error("========== OTP ERROR ==========");
-    console.error("SDK Error Details:", error.message);
-    
+    console.error(error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
