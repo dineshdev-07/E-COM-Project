@@ -33,6 +33,9 @@ const generateTokenAndSetCookie = (req, res, userId) => {
     expiresIn: "30d",
   });
 
+  console.log("LOGIN API HIT");
+console.log("TOKEN:", token);
+
   res.cookie(
     "token",
     token,
