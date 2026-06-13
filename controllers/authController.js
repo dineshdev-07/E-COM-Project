@@ -2,33 +2,26 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
 export const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+  const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
+  if (user && (await user.matchPassword(password))) {
+    const token = generateTokenAndSetCookie(req, res, user._id);
 
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      isAdmin: user.isAdmin,
+      isAdmin: user.isAdmin || false,
       token,
+      isPlusMember: user.isPlusMember || false,
+      plusExpiryDate: user.plusExpiryDate || null,
+      loyaltyPoints: user.loyaltyPoints || 0,
+      firstOrderCompleted: user.firstOrderCompleted || false,
+      streaks: user.streaks || 0,
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } else {
+    res.status(401).json({ message: "Invalid email or password" });
   }
 };
