@@ -166,16 +166,17 @@ export const loginUser = async (req, res) => {
   if (user && (await user.matchPassword(password))) {
     generateTokenAndSetCookie(req, res, user._id);
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin || false,
-      isPlusMember: user.isPlusMember || false,
-      plusExpiryDate: user.plusExpiryDate || null,
-      loyaltyPoints: user.loyaltyPoints || 0,
-      firstOrderCompleted: user.firstOrderCompleted || false,
-      streaks: user.streaks || 0,
-    });
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin || false,
+    token,
+    isPlusMember: user.isPlusMember || false,
+    plusExpiryDate: user.plusExpiryDate || null,
+    loyaltyPoints: user.loyaltyPoints || 0,
+    firstOrderCompleted: user.firstOrderCompleted || false,
+    streaks: user.streaks || 0,
+  });
   } else {
     res.status(401).json({ message: "Invalid email or password" });
   }
