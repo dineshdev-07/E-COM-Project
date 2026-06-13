@@ -3,10 +3,10 @@ import User from "../models/userModel.js";
 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
+
     const token = generateTokenAndSetCookie(req, res, user._id);
 
     res.json({
@@ -21,6 +21,7 @@ export const loginUser = async (req, res) => {
       firstOrderCompleted: user.firstOrderCompleted || false,
       streaks: user.streaks || 0,
     });
+
   } else {
     res.status(401).json({ message: "Invalid email or password" });
   }
