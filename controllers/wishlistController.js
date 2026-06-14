@@ -2,6 +2,7 @@ import User from "../models/userModel.js";
 import Product from "../models/Product.js";
 
 export const getWishlist = async (req, res) => {
+  console.log("GET WISHLIST HIT");
   try {
     const user = await User.findById(req.user._id).populate(
       "wishlist",
