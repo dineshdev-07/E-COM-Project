@@ -10,12 +10,17 @@ export const getWishlist = async (req, res) => {
     );
     res.json(user.wishlist || []);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch wishlist" });
-  }
+  console.error("WISHLIST ERROR:", err);
+  res.status(500).json({
+    message: "Failed to fetch wishlist",
+    error: err.message,
+  });
+}
 };
 
 export const toggleWishlist = async (req, res) => {
   try {
+    console.log("USER ID:", req.user._id);
     const user = await User.findById(req.user._id);
     const productId = req.params.productId;
 
