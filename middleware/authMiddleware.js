@@ -13,7 +13,8 @@ const extractToken = (req) => {
 
 export const protect = async (req, res, next) => {
 
-   console.log("AUTH HEADER:", req.headers.authorization);
+  console.log("URL:", req.originalUrl);
+console.log("AUTH HEADER:", req.headers.authorization);
   const token = extractToken(req);
  console.log("EXTRACTED TOKEN:", token);
   if (!token) {
