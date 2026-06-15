@@ -22,6 +22,10 @@ const calculateOfferPrice = (user, product) => {
 };
 
 export const addToCart = async (req, res) => {
+
+  console.log("ADD TO CART HIT");
+console.log("BODY:", req.body);
+console.log("USER:", req.user?._id);
   try {
     const { productId, quantity } = req.body;
     const product = await Product.findById(productId);
