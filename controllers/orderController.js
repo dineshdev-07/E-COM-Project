@@ -67,9 +67,10 @@ export const createOrder = asyncHandler(async (req, res) => {
     paidAt: isPaid ? Date.now() : null,
     orderStatus: "Placed",
   });
-
+console.log("REQ BODY:", req.body);
+console.log("ORDER ITEMS:", req.body.orderItems);
   const createdOrder = await order.save();
-
+console.log("ORDER SAVED:", createdOrder);
   await createdOrder.populate("user", "name email");
 
   try {
@@ -101,7 +102,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     razorpay_order_id,
     razorpay_payment_id,
     razorpay_signature,
-    orderId,
+    orderId,  
   } = req.body;
 
   const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -258,6 +259,7 @@ export const updateOrderToRefunded = asyncHandler(async (req, res) => {
 });
 
 export const getAdminDashboard = async (req, res) => {
+  console.log("DASHBOARD API HIT");
   try {
     let stats = await DashboardStats.findOne();
     if (!stats) stats = await DashboardStats.create({});
@@ -267,7 +269,10 @@ export const getAdminDashboard = async (req, res) => {
     const lowStockProducts = await Product.find({ quantity: { $lt: 20 } })
       .select("name quantity _id isActive")
       .sort({ quantity: 1 });
-
+console.log({
+  totalRevenue: stats.netRevenue,
+  totalOrders: stats.totalOrders,
+});
     res.json({
       totalRevenue: stats.netRevenue || 0,
       totalRefunded: stats.refunded || 0,
@@ -289,6 +294,7 @@ export const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ user: req.user._id }).sort({
     createdAt: -1,
   });
+  console.log("MY ORDERS:", orders);
   res.json(orders);
 });
 
