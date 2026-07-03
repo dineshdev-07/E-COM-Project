@@ -257,34 +257,41 @@ export const upgradeToPlus = async (req, res) => {
 };
 
 export const addAddress = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
-  if (!user) {
-    res.status(404);
-    throw new Error("User not found");
+  try {
+    console.log("===== ADD ADDRESS =====");
+    console.log("req.user:", req.user);
+    console.log("req.body:", req.body);
+
+    const user = await User.findById(req.user?._id);
+
+    console.log("user:", user);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { fullAddress, pinCode, phone, district } = req.body;
+
+    user.addresses.push({
+      fullAddress,
+      pinCode,
+      phone,
+      district,
+    });
+
+    await user.save();
+
+    return res.status(201).json(user.addresses);
+  } catch (err) {
+    console.error("ADD ADDRESS ERROR");
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+      stack: err.stack,
+    });
   }
-
-  if (user.addresses.length >= 2) {
-    res.status(400);
-    throw new Error(
-      "Maximum 2 addresses allowed. Please edit an existing one.",
-    );
-  }
-
-  const { fullAddress, pinCode, phone, district } = req.body;
-
-  if (!district?.trim()) {
-    res.status(400);
-    throw new Error("District is required");
-  }
-
-  user.addresses.push({
-    fullAddress,
-    pinCode,
-    phone,
-    district: district.trim(),
-  });
-  await user.save();
-  res.status(201).json(user.addresses);
 });
 
 export const updateAddress = asyncHandler(async (req, res) => {

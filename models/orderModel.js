@@ -70,17 +70,6 @@ const orderSchema = mongoose.Schema(
       ],
       default: "Placed",
     },
-    deliveryPartner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "DeliveryPartner",
-      default: null,
-    },
-
-    assignedAt: {
-      type: Date,
-      default: null,
-    },
-
     deliveryOtp: {
       type: String,
     },

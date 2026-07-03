@@ -14,9 +14,9 @@ import {
   resetMonthlyData,
   resetMonthlyStats,
   generateMonthlyReportPDF,
-  verifyPayment,
 } from "../controllers/orderController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
+import {verifyPayment} from "../controllers/paymentController.js"
 import PDFDocument from "pdfkit";
 import Order from "../models/orderModel.js";
 

@@ -21,7 +21,6 @@ import homeProductRoutes from "./routes/homeProductRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import sellerRequestRoutes from "./routes/sellerRequestRoutes.js";
-import deliveryPartnerRoutes from "./routes/deliveryPartnerRoutes.js";
 
 const app = express();
 
@@ -123,8 +122,6 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/seller-requests", sellerRequestRoutes);
-app.use("/api/delivery-partners", deliveryPartnerRoutes);
 
 // 404 Handler
 app.use("*", (req, res) => {

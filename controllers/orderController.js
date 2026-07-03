@@ -47,7 +47,6 @@ const updateLoyaltyStreak = async (userId, orderAmount) => {
 
   await user.save();
 };
-
 export const createOrder = asyncHandler(async (req, res) => {
   const { orderItems, totalPrice, paymentMethod, isPaid, shippingAddress } =
     req.body;
@@ -63,83 +62,43 @@ export const createOrder = asyncHandler(async (req, res) => {
     shippingAddress,
     totalPrice,
     paymentMethod,
-    isPaid: isPaid || false,
-    paidAt: isPaid ? Date.now() : null,
+    isPaid,
+    paidAt: isPaid ? new Date() : null,
     orderStatus: "Placed",
   });
-console.log("REQ BODY:", req.body);
-console.log("ORDER ITEMS:", req.body.orderItems);
-  const createdOrder = await order.save();
-console.log("ORDER SAVED:", createdOrder);
-  await createdOrder.populate("user", "name email");
-
-  try {
-    if (createdOrder.user?.email) {
-      await sendOrderSuccessEmail({
-        to: createdOrder.user.email,
-        name: createdOrder.user.name,
-        order: createdOrder,
-      });
-      console.log("✅ Order placed email sent");
-    }
-  } catch (err) {
-    console.error("❌ Order email failed:", err.message);
-  }
-
-  if (isPaid) {
-    for (const item of orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { quantity: -item.qty, salesCount: item.qty },
-      });
-    }
-  }
-
-  res.status(201).json(createdOrder);
-});
-
-export const verifyPayment = asyncHandler(async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    orderId,  
-  } = req.body;
-
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(body)
-    .digest("hex");
-
-  if (expectedSignature !== razorpay_signature) {
-    res.status(400);
-    throw new Error("Invalid payment signature");
-  }
-
-  const order = await Order.findById(orderId);
-  if (!order) throw new Error("Order not found");
-
-  order.isPaid = true;
-  order.paidAt = Date.now();
-
-  for (const item of order.orderItems) {
-    await Product.findByIdAndUpdate(item.product, {
-      $inc: { quantity: -item.qty, salesCount: item.qty },
-    });
-  }
 
   await order.save();
 
-  let stats = await DashboardStats.findOne();
-  if (!stats) stats = await DashboardStats.create({});
-  stats.netRevenue += order.totalPrice;
-  stats.paidOrders += 1;
-  stats.totalOrders += 1;
+  res.status(201).json(order);
+  // Background Tasks
+  setImmediate(async () => {
+    try {
+      const user = await User.findById(req.user._id).select("name email");
 
-  await stats.save();
-  await updateLoyaltyStreak(order.user, order.totalPrice);
+      if (user?.email) {
+        sendOrderSuccessEmail({
+          to: user.email,
+          name: user.name,
+          order,
+        }).catch(console.error);
+      }
 
-  res.json(order);
+      if (isPaid) {
+        await Promise.all(
+          orderItems.map((item) =>
+            Product.findByIdAndUpdate(item.product, {
+              $inc: {
+                quantity: -item.qty,
+                salesCount: item.qty,
+              },
+            }),
+          ),
+        );
+      }
+    } catch (err) {
+      console.error("BACKGROUND ERROR:", err);
+    }
+  });
 });
 
 export const markAsDelivered = asyncHandler(async (req, res) => {
@@ -269,10 +228,10 @@ export const getAdminDashboard = async (req, res) => {
     const lowStockProducts = await Product.find({ quantity: { $lt: 20 } })
       .select("name quantity _id isActive")
       .sort({ quantity: 1 });
-console.log({
-  totalRevenue: stats.netRevenue,
-  totalOrders: stats.totalOrders,
-});
+    console.log({
+      totalRevenue: stats.netRevenue,
+      totalOrders: stats.totalOrders,
+    });
     res.json({
       totalRevenue: stats.netRevenue || 0,
       totalRefunded: stats.refunded || 0,
