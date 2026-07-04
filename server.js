@@ -20,7 +20,7 @@ import offerRoutes from "./routes/offerRoutes.js";
 import homeProductRoutes from "./routes/homeProductRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
-import sellerRequestRoutes from "./routes/sellerRequestRoutes.js";
+
 
 const app = express();
 
