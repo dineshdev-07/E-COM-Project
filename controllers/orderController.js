@@ -3,10 +3,10 @@ import crypto from "crypto";
 import Order from "../models/orderModel.js";
 import Product from "../models/Product.js";
 import User from "../models/userModel.js";
-import PDFDocument from "pdfkit";
+
 import DashboardStats from "../models/dashboardStatsModel.js";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+
+
 import { sendOrderSuccessEmail } from "../utils/sendDeliveryEmail.js";
 
 const updateLoyaltyStreak = async (userId, orderAmount) => {
@@ -382,116 +382,3 @@ export const resetMonthlyStats = async (req, res) => {
   }
 };
 
-export const generateMonthlyReportPDF = asyncHandler(async (req, res) => {
-  try {
-    const orders = await Order.find({});
-    const users = await User.countDocuments();
-    const products = await Product.find({});
-
-    const paidOrders = orders.filter((o) => o.isPaid);
-    const cancelledOrders = orders.filter((o) => o.isCancelled);
-    const codOrders = orders.filter((o) => o.paymentMethod === "COD");
-    const refundedOrders = orders.filter((o) => o.isRefunded);
-
-    const netRevenue =
-      paidOrders.reduce((acc, o) => acc + (o.totalPrice || 0), 0) -
-      refundedOrders.reduce((acc, o) => acc + (o.totalPrice || 0), 0);
-
-    const refundedAmount = refundedOrders.reduce(
-      (acc, o) => acc + (o.totalPrice || 0),
-      0,
-    );
-
-    const lowStockProducts = products.filter((p) => p.countInStock < 5);
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "pt",
-      format: "a4",
-    });
-    const pageWidth = doc.internal.pageSize.width;
-
-    doc.setFillColor(111, 175, 142);
-    doc.rect(0, 0, pageWidth, 80, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(28);
-    doc.setFont("helvetica", "bold");
-    doc.text("FreshCart", 40, 50);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "normal");
-    doc.text("Admin Dashboard Report", 40, 70);
-
-    const cardWidth = (pageWidth - 100) / 2;
-    const cardHeight = 50;
-    let startY = 100;
-    const startX = 40;
-    const cardSpacingY = 20;
-    const cardSpacingX = 20;
-
-    const metrics = [
-      { label: "Net Revenue 💰", value: `₹${netRevenue}` },
-      { label: "Refunded 💸", value: `₹${refundedAmount}` },
-      { label: "Paid Orders 📦", value: paidOrders.length },
-      { label: "Total Users 👥", value: users },
-      { label: "Cancelled Orders ❌", value: cancelledOrders.length },
-      { label: "Total Orders 📝", value: orders.length },
-      { label: "COD Orders 💳", value: codOrders.length },
-      { label: "Total Products 📦", value: products.length },
-    ];
-
-    metrics.forEach((m, index) => {
-      const x = startX + (index % 2) * (cardWidth + cardSpacingX);
-      const y = startY + Math.floor(index / 2) * (cardHeight + cardSpacingY);
-      doc.setFillColor(240, 248, 255);
-      doc.roundedRect(x, y, cardWidth, cardHeight, 8, 8, "F");
-      doc.setTextColor(111, 175, 142);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text(m.label, x + 10, y + 18);
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(String(m.value), x + 10, y + 38);
-    });
-
-    startY += Math.ceil(metrics.length / 2) * (cardHeight + cardSpacingY) + 20;
-
-    doc.setTextColor(111, 175, 142);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("⚠ Low Stock Alerts", startX, startY);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    startY += 20;
-
-    if (lowStockProducts.length === 0) {
-      doc.setTextColor(0, 0, 0);
-      doc.text("All products have healthy inventory ✅", startX, startY);
-    } else {
-      lowStockProducts.forEach((p, i) => {
-        doc.setTextColor(0, 0, 0);
-        doc.text(
-          `${i + 1}. ${p.name} - Stock: ${p.countInStock}`,
-          startX,
-          startY,
-        );
-        startY += 18;
-      });
-    }
-
-    doc.setFontSize(10);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, startX, 780);
-
-    const pdfData = doc.output("arraybuffer");
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=FreshCart-dashboard-report.pdf",
-    );
-    res.send(Buffer.from(pdfData));
-  } catch (error) {
-    console.error("PDF generation error:", error);
-    res.status(500).json({ message: "PDF generation failed" });
-  }
-});

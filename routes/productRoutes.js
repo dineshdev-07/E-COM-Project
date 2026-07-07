@@ -22,8 +22,8 @@ const router = express.Router();
 router.get("/suggestions", getSuggestions);
 router.get("/", protectOptional, getProducts);
 router.get("/search", getSearchResults);
-router.get("/:id", protectOptional, getProductById);
 router.get("/category/:category", protectOptional, getProductsByCategory);
+router.get("/:id", protectOptional, getProductById);
 
 router.post("/", protect, admin, uploadProduct.single("image"), createProduct);
 router.delete("/:id", protect, admin, async (req, res) => {

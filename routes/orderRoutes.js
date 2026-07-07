@@ -13,11 +13,10 @@ import {
   getAdminDashboard,
   resetMonthlyData,
   resetMonthlyStats,
-  generateMonthlyReportPDF,
 } from "../controllers/orderController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
-import {verifyPayment} from "../controllers/paymentController.js"
-import PDFDocument from "pdfkit";
+import { verifyPayment } from "../controllers/paymentController.js";
+
 import Order from "../models/orderModel.js";
 
 const router = express.Router();
@@ -35,7 +34,6 @@ router.post("/verify", verifyPayment);
 router.delete("/reset", protect, admin, resetOrders);
 router.put("/reset-monthly-data", protect, admin, resetMonthlyData);
 router.put("/reset-monthly-stats", protect, admin, resetMonthlyStats);
-router.get("/admin/monthly-report", protect, admin, generateMonthlyReportPDF);
 
 router.put("/admin/:id/cancel", protect, admin, adminCancelOrder);
 router.get("/admin/:id", protect, admin, getOrderById);
