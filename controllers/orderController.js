@@ -9,44 +9,6 @@ import DashboardStats from "../models/dashboardStatsModel.js";
 
 import { sendOrderSuccessEmail } from "../utils/sendDeliveryEmail.js";
 
-const updateLoyaltyStreak = async (userId, orderAmount) => {
-  const user = await User.findById(userId);
-  if (!user || orderAmount < 500) return;
-
-  const now = new Date();
-  const lastReward = user.lastStreakRewardDate;
-
-  if (!lastReward) {
-    user.streaks = 1;
-    user.loyaltyPoints = 5;
-  } else {
-    const diffInDays = (now - new Date(lastReward)) / (1000 * 60 * 60 * 24);
-
-    if (diffInDays <= 14) {
-      user.streaks += 1;
-      user.loyaltyPoints += 5;
-    } else {
-      user.streaks = 1;
-      user.loyaltyPoints = 5;
-    }
-  }
-
-  user.lastStreakRewardDate = now;
-
-  if (user.streaks >= 4 && !user.isPlusMember) {
-    user.isPlusMember = true;
-    const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + 1);
-    user.plusExpiryDate = expiry;
-  }
-
-  if (user.plusExpiryDate && user.plusExpiryDate < new Date()) {
-    user.isPlusMember = false;
-    user.plusExpiryDate = null;
-  }
-
-  await user.save();
-};
 export const createOrder = asyncHandler(async (req, res) => {
   const { orderItems, totalPrice, paymentMethod, isPaid, shippingAddress } =
     req.body;
@@ -126,8 +88,6 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
 
     await stats.save();
   }
-
-  await updateLoyaltyStreak(order.user, order.totalPrice);
 
   await order.save();
 

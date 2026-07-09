@@ -10,14 +10,10 @@ const userSchema = mongoose.Schema(
     isPlusMember: { type: Boolean, default: false },
     loyaltyPoints: { type: Number, default: 0 },
 
-    streaks: {
-      type: Number,
-      default: 0,
-    },
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
 
     lastOrderDate: { type: Date },
-    lastStreakRewardDate: { type: Date },
+
     firstOrderCompleted: { type: Boolean, default: false },
     plusExpiryDate: { type: Date },
     addresses: [

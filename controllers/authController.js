@@ -19,7 +19,7 @@ export const loginUser = async (req, res) => {
       plusExpiryDate: user.plusExpiryDate || null,
       loyaltyPoints: user.loyaltyPoints || 0,
       firstOrderCompleted: user.firstOrderCompleted || false,
-      streaks: user.streaks || 0,
+      
     });
 
   } else {
