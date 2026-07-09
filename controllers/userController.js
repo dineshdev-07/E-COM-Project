@@ -214,8 +214,24 @@ export const resetPassword = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
+    console.log("========== PROFILE ==========");
+    console.log("req.user:", req.user);
+
+    if (!req.user) {
+      return res.status(401).json({
+        message: "req.user is undefined",
+      });
+    }
+
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+
+    console.log("Mongo User:", user);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
 
     if (
       user.isPlusMember &&
@@ -228,8 +244,11 @@ export const getUserProfile = async (req, res) => {
     }
 
     res.json(user);
-  } catch {
-    res.status(500).json({ message: "Profile fetch failed" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
 
