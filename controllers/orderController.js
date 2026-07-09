@@ -3,11 +3,7 @@ import crypto from "crypto";
 import Order from "../models/orderModel.js";
 import Product from "../models/Product.js";
 import User from "../models/userModel.js";
-
 import DashboardStats from "../models/dashboardStatsModel.js";
-
-
-import { sendOrderSuccessEmail } from "../utils/sendDeliveryEmail.js";
 
 export const createOrder = asyncHandler(async (req, res) => {
   const { orderItems, totalPrice, paymentMethod, isPaid, shippingAddress } =
@@ -44,19 +40,6 @@ export const createOrder = asyncHandler(async (req, res) => {
           order,
         }).catch(console.error);
       }
-
-      if (isPaid) {
-        await Promise.all(
-          orderItems.map((item) =>
-            Product.findByIdAndUpdate(item.product, {
-              $inc: {
-                quantity: -item.qty,
-                salesCount: item.qty,
-              },
-            }),
-          ),
-        );
-      }
     } catch (err) {
       console.error("BACKGROUND ERROR:", err);
     }
@@ -88,6 +71,8 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
 
     await stats.save();
   }
+
+  await updateLoyaltyStreak(order.user, order.totalPrice);
 
   await order.save();
 
@@ -178,7 +163,6 @@ export const updateOrderToRefunded = asyncHandler(async (req, res) => {
 });
 
 export const getAdminDashboard = async (req, res) => {
-  console.log("DASHBOARD API HIT");
   try {
     let stats = await DashboardStats.findOne();
     if (!stats) stats = await DashboardStats.create({});
@@ -341,4 +325,3 @@ export const resetMonthlyStats = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-
