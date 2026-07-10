@@ -4,6 +4,7 @@ import Order from "../models/orderModel.js";
 import Product from "../models/Product.js";
 import User from "../models/userModel.js";
 import DashboardStats from "../models/dashboardStatsModel.js";
+import { sendOrderSuccessEmail } from "../utils/sendDeliveryEmail.js";
 
 export const createOrder = asyncHandler(async (req, res) => {
   const { orderItems, totalPrice, paymentMethod, isPaid, shippingAddress } =
@@ -73,7 +74,7 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
     await stats.save();
   }
 
-  await updateLoyaltyStreak(order.user, order.totalPrice);
+  // await updateLoyaltyStreak(order.user, order.totalPrice);
 
   await order.save();
 
@@ -183,9 +184,10 @@ export const getAdminDashboard = async (req, res) => {
       cancelledOrders: stats.cancelledOrders || 0,
       totalOrders: stats.totalOrders || 0,
       codOrders: stats.codOrders || 0,
-      usersCount: usersCount || 0,
-      productsCount: productsCount || 0,
-      lowStockProducts: lowStockProducts || [],
+      usersCount,
+      productsCount,
+      lowStockProducts,
+      pendingRefunds,
     });
   } catch (error) {
     console.error("Dashboard Error:", error);
