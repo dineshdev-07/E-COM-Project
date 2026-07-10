@@ -39,7 +39,6 @@ export const verifyPayment = async (req, res) => {
   console.log(req.body);
 
   try {
-    console.log("Order ID:", orderId);
     const {
       razorpay_order_id,
       razorpay_payment_id,
@@ -47,57 +46,89 @@ export const verifyPayment = async (req, res) => {
       orderId,
     } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ message: "Missing payment details" });
+    // Validate request
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
+      return res.status(400).json({
+        message: "Missing payment details",
+      });
     }
 
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    if (!orderId) {
+      return res.status(400).json({
+        message: "Order ID is missing",
+      });
+    }
+
+    // Verify Razorpay signature
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
 
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(body)
       .digest("hex");
 
-    if (expectedSignature === razorpay_signature) {
-      const order = await Order.findById(orderId);
-      console.log(order);
-
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      order.isPaid = true;
-      order.paidAt = new Date();
-      order.orderStatus = "Placed";
-
-      order.paymentResult = {
-        id: razorpay_payment_id,
-        orderId: razorpay_order_id,
-        status: "Paid",
-        update_time: new Date(),
-      };
-
-      await order.save();
-
-      for (const item of order.orderItems) {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: {
-            quantity: -item.qty,
-            salesCount: item.qty,
-          },
-        });
-      }
-
-      // ==========================
-
-      return res.status(200).json({
-        message: "Payment verified successfully",
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({
+        message: "Invalid signature",
       });
-    } else {
-      return res.status(400).json({ message: "Invalid signature" });
     }
+
+    // Find order
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    // Prevent duplicate payment verification
+    if (order.isPaid) {
+      return res.status(400).json({
+        message: "Order is already paid",
+      });
+    }
+
+    // Update payment status
+    order.isPaid = true;
+    order.paidAt = new Date();
+    order.orderStatus = "Placed";
+
+    order.paymentMethod = "ONLINE";
+
+    order.paymentResult = {
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
+    };
+
+    await order.save();
+
+    // Update product stock
+    for (const item of order.orderItems) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: {
+          quantity: -item.qty,
+          salesCount: item.qty,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment verified successfully",
+      orderId: order._id,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Payment verification failed" });
+    console.error("VERIFY PAYMENT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Payment verification failed",
+    });
   }
 };
