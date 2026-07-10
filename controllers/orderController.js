@@ -91,15 +91,12 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   const stats = await DashboardStats.findOne();
 
   order.isCancelled = true;
-  order.cancelledAt = Date.now();
+  order.cancelledAt = new Date();
   order.orderStatus = "Cancelled";
 
-  if (order.isPaid && !order.isRefunded) {
-    for (const item of order.orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { quantity: item.qty, salesCount: -item.qty },
-      });
-    }
+  if (order.isPaid) {
+    order.refundStatus = "Pending";
+    order.refundRequestedAt = new Date();
   }
 
   stats.cancelledOrders += 1;
@@ -118,15 +115,12 @@ export const adminCancelOrder = asyncHandler(async (req, res) => {
   }
 
   order.isCancelled = true;
-  order.cancelledAt = Date.now();
+  order.cancelledAt = new Date();
   order.orderStatus = "Cancelled";
 
-  if (order.isPaid && !order.isRefunded) {
-    for (const item of order.orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { quantity: item.qty, salesCount: -item.qty },
-      });
-    }
+  if (order.isPaid) {
+    order.refundStatus = "Pending";
+    order.refundRequestedAt = new Date();
   }
 
   const stats = await DashboardStats.findOne();
@@ -145,7 +139,8 @@ export const updateOrderToRefunded = asyncHandler(async (req, res) => {
   if (order.isRefunded) throw new Error("Order already refunded");
 
   order.isRefunded = true;
-  order.refundedAt = Date.now();
+  order.refundStatus = "Approved";
+  order.refundedAt = new Date();
   order.orderStatus = "Refunded";
 
   for (const item of order.orderItems) {
@@ -176,6 +171,10 @@ export const getAdminDashboard = async (req, res) => {
     console.log({
       totalRevenue: stats.netRevenue,
       totalOrders: stats.totalOrders,
+    });
+
+    const pendingRefunds = await Order.countDocuments({
+      refundStatus: "Pending",
     });
     res.json({
       totalRevenue: stats.netRevenue || 0,

@@ -31,7 +31,7 @@ const orderSchema = mongoose.Schema(
             expiryBonus: { type: Number, default: 0 },
             viewsBonus: { type: Number, default: 0 },
             salesBonus: { type: Number, default: 0 },
-            stockBonus: { type: Number, default: 0 }, 
+            stockBonus: { type: Number, default: 0 },
             viewsAtOrder: { type: Number, default: null },
             salesCountAtOrder: { type: Number, default: null },
             stockAtOrder: { type: Number, default: null },
@@ -84,8 +84,22 @@ const orderSchema = mongoose.Schema(
     },
     isCancelled: { type: Boolean, default: false },
     cancelledAt: { type: Date },
+    isCancelled: { type: Boolean, default: false },
+    cancelledAt: { type: Date },
+
     isRefunded: { type: Boolean, default: false },
+
+    refundStatus: {
+      type: String,
+      enum: ["None", "Pending", "Approved", "Rejected"],
+      default: "None",
+    },
+
+    refundRequestedAt: { type: Date },
+
     refundedAt: { type: Date },
+
+    isAdminArchived: { type: Boolean, default: false },
     isAdminArchived: { type: Boolean, default: false },
     shippingAddress: {
       address: String,
