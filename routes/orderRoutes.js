@@ -29,7 +29,7 @@ router.get("/admin/dashboard", protect, admin, getAdminDashboard);
 router.get("/admin", protect, admin, getAllOrders);
 router.get("/", protect, admin, getAllOrders);
 
-router.post("/verify", verifyPayment);
+router.post("/verify", protect, verifyPayment);
 
 router.delete("/reset", protect, admin, resetOrders);
 router.put("/reset-monthly-data", protect, admin, resetMonthlyData);

@@ -8,6 +8,6 @@ import { protect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 router.post("/create", createPayment);
 router.post("/create-order", protect, createPayment);
-router.post("/verify", verifyPayment);
+router.post("/verify", protect, verifyPayment);
 
 export default router;

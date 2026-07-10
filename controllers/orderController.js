@@ -9,12 +9,14 @@ export const createOrder = asyncHandler(async (req, res) => {
   const { orderItems, totalPrice, paymentMethod, isPaid, shippingAddress } =
     req.body;
 
+  // Validate request
   if (!orderItems || orderItems.length === 0) {
     res.status(400);
     throw new Error("No order items");
   }
 
-  const order = new Order({
+  // Create order
+  const order = await Order.create({
     user: req.user._id,
     orderItems,
     shippingAddress,
@@ -25,27 +27,26 @@ export const createOrder = asyncHandler(async (req, res) => {
     orderStatus: "Placed",
   });
 
-  await order.save();
-
-  res.status(201).json(order);
-  // Background Tasks
+  // Send email in background
   setImmediate(async () => {
     try {
       const user = await User.findById(req.user._id).select("name email");
 
       if (user?.email) {
-        sendOrderSuccessEmail({
+        await sendOrderSuccessEmail({
           to: user.email,
           name: user.name,
           order,
-        }).catch(console.error);
+        });
       }
     } catch (err) {
       console.error("BACKGROUND ERROR:", err);
     }
   });
-});
 
+  // Return response
+  res.status(201).json(order);
+});
 export const markAsDelivered = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
