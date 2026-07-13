@@ -28,6 +28,12 @@ export const createOrder = asyncHandler(async (req, res) => {
     orderStatus: "Placed",
   });
 
+  let stats = await DashboardStats.findOne();
+  if (!stats) stats = await DashboardStats.create({});
+
+  stats.totalOrders += 1;
+  await stats.save();
+
   // Send email in background
   setImmediate(async () => {
     try {
@@ -76,11 +82,11 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
   const user = await User.findById(order.user);
 
   console.log("Order Total:", order.totalPrice);
-console.log("User Before:", {
-  loyaltyPoints: user.loyaltyPoints,
-  isPlusMember: user.isPlusMember,
-  firstOrderCompleted: user.firstOrderCompleted,
-});
+  console.log("User Before:", {
+    loyaltyPoints: user.loyaltyPoints,
+    isPlusMember: user.isPlusMember,
+    firstOrderCompleted: user.firstOrderCompleted,
+  });
 
   if (user && order.totalPrice >= 500) {
     user.loyaltyPoints += 20;
@@ -95,10 +101,10 @@ console.log("User Before:", {
     }
     await user.save();
     console.log("User After:", {
-  loyaltyPoints: user.loyaltyPoints,
-  isPlusMember: user.isPlusMember,
-  firstOrderCompleted: user.firstOrderCompleted,
-});
+      loyaltyPoints: user.loyaltyPoints,
+      isPlusMember: user.isPlusMember,
+      firstOrderCompleted: user.firstOrderCompleted,
+    });
   }
   await order.save();
 
@@ -175,6 +181,7 @@ export const updateOrderToRefunded = asyncHandler(async (req, res) => {
   }
 
   const stats = await DashboardStats.findOne();
+  console.log("Refund Order:", order._id, order.totalPrice);
   stats.netRevenue -= order.totalPrice;
   stats.refunded += order.totalPrice;
   await stats.save();
