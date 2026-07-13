@@ -74,7 +74,8 @@ const calculateSmartOffer = (product, user) => {
 };
 
 export const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({});
+  const products = await Product.find({})
+    .lean();
 
   let user = null;
   if (req.user) {
