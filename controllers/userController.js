@@ -33,9 +33,6 @@ const generateTokenAndSetCookie = (req, res, userId) => {
     expiresIn: "30d",
   });
 
-  console.log("LOGIN API HIT");
-console.log("TOKEN:", token);
-
   res.cookie(
     "token",
     token,
@@ -115,20 +112,14 @@ export const sendOTP = async (req, res) => {
 
 export const registerUser = async (req, res) => {
   try {
-    console.log("REGISTER REQUEST:", req.body);
 
     const { name, email, password, otp } = req.body;
-
-    console.log("Stored OTP:", otpStore[email]);
-    console.log("Entered OTP:", otp);
 
     if (otpStore[email] !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
     const userExists = await User.findOne({ email });
-
-    console.log("User exists:", userExists);
 
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -214,8 +205,6 @@ export const resetPassword = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
-    console.log("========== PROFILE ==========");
-    console.log("req.user:", req.user);
 
     if (!req.user) {
       return res.status(401).json({
@@ -293,9 +282,6 @@ export const upgradeToPlus = async (req, res) => {
 };
 export const addAddress = asyncHandler(async (req, res) => {
   try {
-    console.log("===== ADD ADDRESS =====");
-    console.log("req.user:", req.user);
-    console.log("req.body:", req.body);
 
     const user = await User.findById(req.user?._id);
 

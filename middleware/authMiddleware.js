@@ -12,11 +12,7 @@ const extractToken = (req) => {
 };
 
 export const protect = async (req, res, next) => {
-  console.log("Authorization Header:", req.headers.authorization);
-
   const token = extractToken(req);
-
-  console.log("Extracted Token:", token);
 
   if (!token) {
     return res.status(401).json({ message: "Not authorized" });
@@ -25,15 +21,10 @@ export const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    console.log("Decoded:", decoded);
-
     req.user = await User.findById(decoded.id).select("-password");
-
-    console.log("User Found:", req.user?._id);
 
     next();
   } catch (err) {
-    console.log("JWT ERROR:", err.message);
     return res.status(401).json({ message: "Token failed" });
   }
 };

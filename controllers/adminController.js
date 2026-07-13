@@ -30,7 +30,6 @@ export const getAdminDashboard = async (req, res) => {
     })
       .sort({ quantity: 1 })
       .lean();
-    console.log("RAW PRODUCTS FROM DB:", lowStockProducts);
 
     res.json({
       totalOrders,

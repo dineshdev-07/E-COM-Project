@@ -44,10 +44,9 @@ export const createOrder = asyncHandler(async (req, res) => {
       console.error("BACKGROUND ERROR:", err);
     }
   });
-
-  // Return response
   res.status(201).json(order);
 });
+
 export const markAsDelivered = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
@@ -74,8 +73,33 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
     await stats.save();
   }
 
-  // await updateLoyaltyStreak(order.user, order.totalPrice);
+  const user = await User.findById(order.user);
 
+  console.log("Order Total:", order.totalPrice);
+console.log("User Before:", {
+  loyaltyPoints: user.loyaltyPoints,
+  isPlusMember: user.isPlusMember,
+  firstOrderCompleted: user.firstOrderCompleted,
+});
+
+  if (user && order.totalPrice >= 500) {
+    user.loyaltyPoints += 20;
+    user.firstOrderCompleted = true;
+
+    if (user.loyaltyPoints >= 20 && !user.isPlusMember) {
+      user.isPlusMember = true;
+
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 30);
+      user.plusExpiryDate = expiry;
+    }
+    await user.save();
+    console.log("User After:", {
+  loyaltyPoints: user.loyaltyPoints,
+  isPlusMember: user.isPlusMember,
+  firstOrderCompleted: user.firstOrderCompleted,
+});
+  }
   await order.save();
 
   res.json(order);
@@ -223,7 +247,6 @@ export const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ user: req.user._id }).sort({
     createdAt: -1,
   });
-  console.log("MY ORDERS:", orders);
   res.json(orders);
 });
 

@@ -3,13 +3,10 @@ import Product from "../models/Product.js";
 
 export const getWishlist = async (req, res) => {
   try {
-    console.log("GET WISHLIST HIT");
-    console.log("USER ID:", req.user._id);
-    console.log("BEFORE POPULATE");
 
     const user = await User.findById(req.user._id).populate("wishlist");
 
-    console.log("AFTER POPULATE", user);
+ 
 
     res.json(user.wishlist || []);
   } catch (err) {
@@ -24,7 +21,7 @@ export const getWishlist = async (req, res) => {
 
 export const toggleWishlist = async (req, res) => {
   try {
-    console.log("USER ID:", req.user._id);
+    
     const user = await User.findById(req.user._id);
     const productId = req.params.productId;
 

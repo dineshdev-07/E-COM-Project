@@ -26,9 +26,6 @@ const app = express();
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log("METHOD:", req.method);
-  console.log("ORIGIN:", req.headers.origin);
-  console.log("URL:", req.originalUrl);
   next();
 });
 
