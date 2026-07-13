@@ -173,10 +173,33 @@ export const getAdminDashboard = async (req, res) => {
       totalRevenue: stats.netRevenue,
       totalOrders: stats.totalOrders,
     });
+    const expiryProducts = await Product.find({
+      expiryDate: { $exists: true, $ne: null },
+    })
+      .select("name quantity expiryDate")
+      .sort({ expiryDate: 1 });
+
+    const today = new Date();
+
+    const expiryTimeline = expiryProducts.map((product) => {
+      const daysLeft = Math.ceil(
+        (new Date(product.expiryDate) - today) / (1000 * 60 * 60 * 24),
+      );
+
+      return {
+        _id: product._id,
+        name: product.name,
+        quantity: product.quantity,
+        expiryDate: product.expiryDate,
+        daysLeft,
+      };
+    });
 
     const pendingRefunds = await Order.countDocuments({
       refundStatus: "Pending",
     });
+
+    console.log(expiryTimeline);
     res.json({
       totalRevenue: stats.netRevenue || 0,
       totalRefunded: stats.refunded || 0,
@@ -188,6 +211,7 @@ export const getAdminDashboard = async (req, res) => {
       productsCount,
       lowStockProducts,
       pendingRefunds,
+      expiryTimeline,
     });
   } catch (error) {
     console.error("Dashboard Error:", error);

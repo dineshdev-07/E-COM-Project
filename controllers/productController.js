@@ -4,44 +4,73 @@ import User from "../models/userModel.js";
 import cloudinary from "../utils/cloudinary.js";
 
 const calculateSmartOffer = (product, user) => {
-  let extraDiscount = 0;
-  let offerType = null;
-
   const basePrice = product.discountedPrice || product.price;
 
-  if (user) {
-    if (!user.firstOrderCompleted) {
-      extraDiscount = 20;
+  let discount = 0;
+  let offerType = null;
+
+  // 1. Expiry discount - available to EVERY user
+  if (product.expiryDate) {
+    const now = new Date();
+    const expiry = new Date(product.expiryDate);
+
+    const daysLeft = product.daysLeft;
+
+    if (daysLeft > 0 && daysLeft <= 3) {
+      discount = 30;
+      offerType = "EXPIRY";
+    } else if (daysLeft <= 7) {
+      discount = 20;
+      offerType = "EXPIRY";
+    } else if (daysLeft <= 15) {
+      discount = 10;
+      offerType = "EXPIRY";
+    }
+  }
+
+  // 2. New user discount
+  if (user && !user.firstOrderCompleted) {
+    const newUserDiscount = 20;
+
+    // Only replace if higher
+    if (newUserDiscount > discount) {
+      discount = newUserDiscount;
       offerType = "NEW_USER";
-    } else if (user.loyaltyPoints >= 50) {
-      let loyaltyDiscount = 1;
+    }
+  }
 
-      if ((product.views || 0) < 50) loyaltyDiscount += 5;
-      if ((product.salesCount || 0) < 20) loyaltyDiscount += 5;
-      if ((product.quantity || 0) < 10) loyaltyDiscount += 5;
+  // 3. Loyalty discount
+  if (user && user.loyaltyPoints >= 50) {
+    let loyaltyDiscount = 5;
 
-      if (product.expiryDate) {
-        const diffDays =
-          (new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
-        if (diffDays > 0 && diffDays < 7) loyaltyDiscount += 5;
-      }
+    if ((product.views || 0) < 50) {
+      loyaltyDiscount = 10;
+    }
 
-      if ((product.views || 0) > 200 && (product.salesCount || 0) > 100)
-        loyaltyDiscount = 5;
+    if ((product.salesCount || 0) < 20) {
+      loyaltyDiscount = 15;
+    }
 
-      extraDiscount = Math.min(Math.max(loyaltyDiscount, 1), 25);
+    if ((product.quantity || 0) < 10) {
+      loyaltyDiscount = 20;
+    }
+
+    // Only replace if higher
+    if (loyaltyDiscount > discount) {
+      discount = loyaltyDiscount;
       offerType = "LOYALTY";
     }
   }
 
-  const extraAmount = (basePrice * extraDiscount) / 100;
-  const rawFinalPrice = basePrice - extraAmount;
+  // Calculate final price
+  const discountAmount = (basePrice * discount) / 100;
+  const finalPrice = Math.round(basePrice - discountAmount);
 
-  const decimal = rawFinalPrice - Math.floor(rawFinalPrice);
-  const finalPrice =
-    decimal >= 0.5 ? Math.floor(rawFinalPrice) + 1 : Math.floor(rawFinalPrice);
-
-  return { finalPrice, extraDiscountApplied: extraDiscount, offerType };
+  return {
+    finalPrice,
+    extraDiscountApplied: discount,
+    offerType,
+  };
 };
 
 export const getProducts = asyncHandler(async (req, res) => {
