@@ -11,9 +11,6 @@ const calculateSmartOffer = (product, user) => {
 
   // 1. Expiry discount - available to EVERY user
   if (product.expiryDate) {
-    const now = new Date();
-    const expiry = new Date(product.expiryDate);
-
     const daysLeft = product.daysLeft;
 
     if (daysLeft > 0 && daysLeft <= 3) {
@@ -74,8 +71,7 @@ const calculateSmartOffer = (product, user) => {
 };
 
 export const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({})
-    .lean();
+  const products = await Product.find({});
 
   let user = null;
   if (req.user) {
@@ -94,6 +90,8 @@ export const getProducts = asyncHandler(async (req, res) => {
       extraDiscountApplied,
       offerType,
     };
+    console.log(product);
+    console.log(product._doc);
   });
 
   res.json(updatedProducts);
@@ -259,7 +257,7 @@ export const getSearchResults = asyncHandler(async (req, res) => {
     }));
 
     const products = await Product.find({ $or: regexFilters }).select(
-      "name images price discountedPrice extraDiscountApplied quantity brand",
+      "name images price discountedPrice quantity brand category expiryDate salesCount views",
     );
 
     const exactIndex = products.findIndex(
