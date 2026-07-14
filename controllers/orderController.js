@@ -30,6 +30,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   if (!stats) stats = await DashboardStats.create({});
 
   stats.totalOrders += 1;
+  
   await stats.save();
 
   setImmediate(async () => {
@@ -62,19 +63,20 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
   order.isDelivered = true;
   order.deliveredAt = Date.now();
   order.orderStatus = "Delivered";
+  
+  let stats = await DashboardStats.findOne();
+  if (!stats) stats = await DashboardStats.create({});
 
   if (!order.isPaid) {
     order.isPaid = true;
     order.paidAt = Date.now();
-    let stats = await DashboardStats.findOne();
-    if (!stats) stats = await DashboardStats.create({});
+    stats.codOrders += 1; 
+  }
 
     stats.netRevenue += order.totalPrice;
     stats.paidOrders += 1;
-    stats.codOrders += 1;
 
     await stats.save();
-  }
 
   const user = await User.findById(order.user);
 
