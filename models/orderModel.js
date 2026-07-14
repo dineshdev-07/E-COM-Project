@@ -47,6 +47,12 @@ const orderSchema = mongoose.Schema(
     totalPrice: { type: Number, required: true },
     extraDiscount: { type: Number, default: 0 },
 
+    itemsPrice: { type: Number, required: true },
+
+    discount: { type: Number, default: 0 },
+
+    deliveryPrice: { type: Number, default: 0 },
+
     isDelivered: { type: Boolean, default: false },
     deliveredAt: { type: Date },
     isPaid: { type: Boolean, default: false },
@@ -84,8 +90,6 @@ const orderSchema = mongoose.Schema(
     },
     isCancelled: { type: Boolean, default: false },
     cancelledAt: { type: Date },
-    isCancelled: { type: Boolean, default: false },
-    cancelledAt: { type: Date },
 
     isRefunded: { type: Boolean, default: false },
 
@@ -100,7 +104,7 @@ const orderSchema = mongoose.Schema(
     refundedAt: { type: Date },
 
     isAdminArchived: { type: Boolean, default: false },
-    isAdminArchived: { type: Boolean, default: false },
+
     shippingAddress: {
       address: String,
       city: String,

@@ -15,10 +15,29 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error("No order items");
   }
 
+  const itemsPrice = orderItems.reduce(
+    (sum, item) => sum + Number(item.mrp || item.price) * item.qty,
+    0,
+  );
+
+  const sellingPrice = orderItems.reduce(
+    (sum, item) => sum + Number(item.price) * item.qty,
+    0,
+  );
+
+  const discount = itemsPrice - sellingPrice;
+
+  const user = await User.findById(req.user._id);
+
+  const deliveryPrice = sellingPrice >= 299 || user.isPlusMember ? 0 : 39;
+
   const order = await Order.create({
     user: req.user._id,
     orderItems,
     shippingAddress,
+    itemsPrice,
+    discount,
+    deliveryPrice,
     totalPrice,
     paymentMethod,
     isPaid,
@@ -30,7 +49,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   if (!stats) stats = await DashboardStats.create({});
 
   stats.totalOrders += 1;
-  
+
   await stats.save();
 
   setImmediate(async () => {
@@ -63,20 +82,20 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
   order.isDelivered = true;
   order.deliveredAt = Date.now();
   order.orderStatus = "Delivered";
-  
+
   let stats = await DashboardStats.findOne();
   if (!stats) stats = await DashboardStats.create({});
 
   if (!order.isPaid) {
     order.isPaid = true;
     order.paidAt = Date.now();
-    stats.codOrders += 1; 
+    stats.codOrders += 1;
   }
 
-    stats.netRevenue += order.totalPrice;
-    stats.paidOrders += 1;
+  stats.netRevenue += order.totalPrice;
+  stats.paidOrders += 1;
 
-    await stats.save();
+  await stats.save();
 
   const user = await User.findById(order.user);
 
@@ -167,21 +186,21 @@ export const updateOrderToRefunded = asyncHandler(async (req, res) => {
     });
   }
 
-const stats = await DashboardStats.findOne();
+  const stats = await DashboardStats.findOne();
 
-if (!stats) {
-  throw new Error("Dashboard stats not found");
-}
+  if (!stats) {
+    throw new Error("Dashboard stats not found");
+  }
 
-console.log("Refund Order:", order._id, order.totalPrice);
-console.log("Revenue Before:", stats.netRevenue);
+  console.log("Refund Order:", order._id, order.totalPrice);
+  console.log("Revenue Before:", stats.netRevenue);
 
-stats.netRevenue = Math.max(0, stats.netRevenue - order.totalPrice);
-stats.refunded += order.totalPrice;
+  stats.netRevenue = Math.max(0, stats.netRevenue - order.totalPrice);
+  stats.refunded += order.totalPrice;
 
-console.log("Revenue After:", stats.netRevenue);
+  console.log("Revenue After:", stats.netRevenue);
 
-await stats.save();
+  await stats.save();
   res.json(order);
 });
 
